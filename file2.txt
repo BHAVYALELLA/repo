@@ -1,0 +1,55 @@
+yum install ansible –y
+sudo su
+useradd ansadmin
+passwd ansadmin
+visudo
+ansadmin    ALL=(ALL)    ALL
+nano /etc/ssh/sshd_config
+PasswordAuthentication no to yes
+service sshd reload
+su ansadmin
+ssh-keygen
+nano /etc/ansible/hosts
+Add docker-host and ansible-host private  IP to it
+ssh-copy-id 172.31.5.231
+exit
+cd /opt
+sudo yum install docker –y
+sudo usermod -aG docker ansadmin
+id ansadmin
+sudo service docker start
+mkdir docker
+chown -R ansadmin:ansadmin docker
+su ansadmin
+cd docker
+nano Dockerfile
+FROM tomcat:latest
+RUN cp -R /usr/local/tomcat/webapps.dist/* /usr/local/tomcat/webapps/
+COPY ./*.war /usr/local/tomcat/webapps/ 
+cd
+ssh-copy-id 172.31.6.164
+pwd
+cd .ssh
+Create an account in DockerHub & Login to DockerHub from AnsibleHost
+cd
+cd /opt/docker
+docker login
+nano helloworld.yml
+---
+- hosts: ansiblehost
+
+  tasks:
+  - name: create docker image
+    command: docker build -t helloworld:latest .
+    args:
+      chdir: /opt/docker
+
+  - name: create tag to push onto dockerhub
+    command: docker tag helloworld:latest y21acs480/helloworld:latest
+
+  - name: push docker image
+    command: docker push y21acs480/helloworld:latest
+...
+
+ansible-playbook helloworld.yml --syntax-check
+ansible-playbook helloworld.yml
